@@ -5,6 +5,7 @@ description = "GraphRAG agent service (ingestion, retrieval, LangGraph, FastAPI)
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
+    "langgraph>=1.2.11",
     "neo4j>=6.3.1",
     "ontology",
     "pydantic>=2.10",

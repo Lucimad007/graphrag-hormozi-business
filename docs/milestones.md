@@ -13,8 +13,8 @@
 | M8 | Vector retrieval | Done |
 | M9 | Graph retrieval | Done |
 | M10 | Hybrid retrieval | Done |
-| M11 | LangGraph query/reasoning workflow | Next |
-| M12 | FastAPI API | Pending |
+| M11 | LangGraph query/reasoning workflow | Done |
+| M12 | FastAPI API | Next |
 | M13 | Tests + evaluation dataset | Pending |
 | M14 | Docker / local developer experience | Pending |
 | M15 | README + architecture documentation + cleanup | Pending |
