@@ -17,6 +17,6 @@
 | M12 | FastAPI API | Done |
 | M13 | Tests + evaluation dataset | Done |
 | M14 | Docker / local developer experience | Done |
-| M15 | README + architecture documentation + cleanup | Next |
+| M15 | README + architecture documentation + cleanup | Done |
 
-After each milestone: run relevant checks, one conventional commit, then wait before starting the next.
+Implemented incrementally with conventional commits. Further work is listed under Roadmap in the README.

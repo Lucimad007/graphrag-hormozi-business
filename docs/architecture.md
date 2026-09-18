@@ -1,32 +1,26 @@
 # Architecture
 
-Agentic GraphRAG for business strategy. The first knowledge domain is Alex Hormozi-style frameworks, but the pipeline is **knowledge-source replaceable**. This is not a generic chatbot: answers must be grounded in retrieved vector chunks and graph evidence with source attribution.
-
-## Inspection (M0)
-
-The repository started as a single `Initial commit` containing only a LangGraph `.gitignore`. There is no prior application code. Implementation proceeds greenfield, one milestone commit at a time.
+Agentic GraphRAG for business strategy. The first knowledge domain is Hormozi-style frameworks; the **code is knowledge-source replaceable**. This is not a generic chatbot: answers are grounded in retrieved chunks and graph edges with source attribution.
 
 ## Why GraphRAG
 
-Basic RAG retrieves similar text. Strategy questions need **causal and structural links**: a problem maps to a metric, a metric to a strategy, a strategy to prerequisites and expected outcomes. A knowledge graph encodes those links; vectors recover supporting passages; a LangGraph workflow decides what to retrieve and how to use it.
+Basic RAG retrieves similar text. Strategy questions need causal structure (problem → metric → strategy → prerequisite → outcome). Neo4j stores typed edges; Qdrant stores passages; LangGraph chooses what to retrieve and how to cite it.
 
-## Target layout
+## Layout
 
 ```
 /
-├── apps/agent/          # FastAPI, LangGraph, ingestion, retrieval
-├── packages/ontology/   # Extensible business entity and relationship schemas
-├── knowledge/           # Synthetic samples and legal ingest instructions
-├── docker/              # Local infrastructure extras
+├── apps/agent/          # FastAPI, LangGraph, ingest, retrieval, eval helpers
+├── packages/ontology/   # Entity/relationship schemas + registry
+├── knowledge/           # Synthetic samples, eval dataset, legal ingest notes
+├── docker/agent/        # API image
 ├── docs/
 ├── docker-compose.yml
 ├── pyproject.toml
-├── uv.lock
-├── .env.example
 └── README.md
 ```
 
-PostgreSQL is **not** in the initial stack. Document identity and provenance live on Neo4j `Source` / `Evidence` nodes and Qdrant chunk payloads, with idempotent ingest keys.
+PostgreSQL is omitted. Document identity is Neo4j `Source` nodes plus Qdrant payload metadata. Chunk and entity ids are stable for re-ingest.
 
 ## Runtime
 
@@ -46,106 +40,60 @@ flowchart LR
   subgraph query [Query]
     api[FastAPI]
     lg[LangGraph]
-    hybrid[HybridRetrieval]
-    api --> lg --> hybrid
-    hybrid --> qdrant
-    hybrid --> neo4j
+    api --> lg
+    lg --> qdrant
+    lg --> neo4j
   end
   embed --> qdrant
   extract --> neo4j
 ```
 
-Ingestion: document → parse → normalize → chunk → extract entities → extract relationships → embeddings → Qdrant + Neo4j.
+Ingest: document → parse → normalize → chunk → extract → embed → Qdrant + Neo4j.
 
-Query: FastAPI → LangGraph (typed state) → hybrid retrieval → evidence evaluation → grounded answer.
+Query: `POST /query` → LangGraph (`understand_query` → `classify_intent` → graph retrieve → vector retrieve → `evaluate_evidence` → `reason` → `generate_answer`). `out_of_scope` skips retrieval. Evidence evaluation merges chunk entity ids into the subgraph.
 
-## Agent modules (`apps/agent/src`)
+## Modules (`apps/agent/src/agent`)
 
 | Module | Role |
 |--------|------|
-| `config/` | Environment-based settings. No secrets in git. |
-| `domain/` | Agent-facing models wrapping ontology types. |
-| `ingestion/` | Markdown, TXT, PDF parse, normalize, chunk; idempotent IDs. |
-| `extraction/` | Ontology-constrained entity and relationship extraction. |
-| `retrieval/` | Vector, graph, and hybrid retrieval with chunk metadata. |
-| `graph/` | LangGraph workflow: understand, classify, retrieve, evaluate, reason, generate. |
-| `api/` | `POST /query`, `POST /ingest`, `GET /health`. |
+| `config/` | Environment settings. No secrets in git. |
+| `domain/` | Agent wrappers around ontology entities/rels. |
+| `ingestion/` | MD/TXT/PDF parse, chunk, `IngestionService`. |
+| `extraction/` | Ontology-constrained LLM extraction. |
+| `embedding.py` | OpenAI-compatible embeddings client. |
+| `repositories/` | `VectorStore` / `GraphRepository`; Qdrant, Neo4j, in-memory fakes. |
+| `retrieval/` | Vector, graph, hybrid. |
+| `graph/` | LangGraph `QueryWorkflow` + `QueryState`. |
+| `api/` | `/query`, `/ingest`, `/health`. `app` is unconfigured; `main` loads settings. |
+| `eval/` | Eval dataset loader + lexical embeddings. |
 
-**Vector store interface:** collection init, chunk upsert, metadata filter, similarity search. Qdrant is an implementation, not the business-logic surface.
-
-**Graph repository interface:** entity upsert, relationship create, subgraph retrieval. Cypher is parameterized only; never interpolate user text into queries.
+Cypher and Qdrant filters use parameters. Relationship types interpolated into Cypher are ontology-whitelisted `UPPER_SNAKE` identifiers only.
 
 ## Ontology
 
-Explicit types, not unbounded LLM labels. Extensible via a versioned registry.
+Versioned `OntologyRegistry` (`ONTOLOGY_VERSION = 1.0.0`).
 
 **Entities:** Business, Customer, Offer, Problem, Metric, Strategy, Tactic, Concept, Constraint, Prerequisite, Outcome, LeadSource, BusinessStage, Evidence, Source.
 
 **Relationships:** SOLVES, IMPROVES, REQUIRES, TARGETS, CAUSES, RELATED_TO, CONFLICTS_WITH, DERIVED_FROM, APPLIES_TO, MEASURED_BY, PART_OF.
 
-Typical reasoning path: Business → Problem → Metric → Strategy → Concept → Prerequisite → Outcome.
+Extend with `register_entity_type` / `register_relation_type` / `allow_edge`.
 
-## Retrieval
+## Retrieval metadata
 
-1. Dense search in Qdrant.
-2. Graph traversal in Neo4j.
-3. Hybrid combination of both.
-
-Each chunk retains: source, document, section/chapter, chunk id, related entities, relevance scores.
-
-The model does not pretend to have the books in weights. Answers cite retrieved evidence.
-
-## LangGraph workflow
-
-Typed graph state. Retrieval nodes are separate from reasoning and generation.
-
-```
-START
-→ understand_query
-→ classify_intent
-→ retrieve_graph_context
-→ retrieve_vector_context
-→ evaluate_evidence
-→ reason
-→ generate_answer
-→ END
-```
-
-Conditional routing after intent classification where useful (for example, skip graph hop when no entities match).
-
-API responses include answer, retrieved sources, graph evidence, and a **safe reasoning summary** (evidence paths). Hidden chain-of-thought is not exposed.
-
-## API
-
-Pydantic request and response models. `/query` returns answer, sources, graph evidence, retrieval metadata, and structured reasoning summaries only.
+Chunks carry: source, document, section, chunk id, entity ids, score. API `QueryResponse` maps those to `sources`, `graph_evidence`, `reasoning` (not chain-of-thought), and `retrieval`.
 
 ## Copyright
 
-Do not download, commit, or redistribute copyrighted books or playbooks. The repository ships schemas, pipelines, synthetic samples, and instructions for users to ingest material they are legally entitled to use. Ingestion code must not depend on Hormozi-specific terminology.
+Do not commit copyrighted books or playbooks. Ship schemas, code, synthetic samples, and ingest instructions only. Extraction prompts list ontology types, not a specific author brand.
 
 ## Tech stack
 
-LangGraph, Python, FastAPI, Qdrant, Neo4j, Docker Compose, uv, Pydantic. TypeScript only if API contracts require it. Current stable, compatible package versions at implementation time.
+LangGraph, Python 3.12, FastAPI, Qdrant, Neo4j, Docker Compose, uv, Pydantic. Implemented versions are pinned in `uv.lock`.
 
-## Milestones
+## Related docs
 
-| ID | Scope | Status |
-|----|--------|--------|
-| M0 | Inspection + architecture docs | This document |
-| M1 | Python project setup + configuration | Next |
-| M2 | Business ontology + domain models | |
-| M3 | Neo4j graph repository | |
-| M4 | Qdrant vector repository | |
-| M5 | Document parsing + chunking | |
-| M6 | Entity/relationship extraction | |
-| M7 | Complete ingestion pipeline | |
-| M8 | Vector retrieval | |
-| M9 | Graph retrieval | |
-| M10 | Hybrid retrieval | |
-| M11 | LangGraph query/reasoning workflow | |
-| M12 | FastAPI API | |
-| M13 | Tests + evaluation dataset | |
-| M14 | Docker / local DX | |
-| M15 | README + architecture polish + cleanup | |
-
-Each milestone is one conventional commit after tests and review. Do not implement the full product in a single change.
+- [README.md](../README.md)
+- [local-setup.md](local-setup.md)
+- [milestones.md](milestones.md)
+- [knowledge/README.md](../knowledge/README.md)
