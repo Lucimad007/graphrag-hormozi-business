@@ -12,8 +12,8 @@
 | M7 | Complete ingestion pipeline | Done |
 | M8 | Vector retrieval | Done |
 | M9 | Graph retrieval | Done |
-| M10 | Hybrid retrieval | Next |
-| M11 | LangGraph query/reasoning workflow | Pending |
+| M10 | Hybrid retrieval | Done |
+| M11 | LangGraph query/reasoning workflow | Next |
 | M12 | FastAPI API | Pending |
 | M13 | Tests + evaluation dataset | Pending |
 | M14 | Docker / local developer experience | Pending |
