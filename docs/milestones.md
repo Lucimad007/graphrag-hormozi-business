@@ -5,8 +5,8 @@
 | M0 | Repository inspection + architecture | Done |
 | M1 | Python project setup + configuration | Done |
 | M2 | Business ontology + domain models | Done |
-| M3 | Neo4j graph repository | Next |
-| M4 | Qdrant vector repository | Pending |
+| M3 | Neo4j graph repository | Done |
+| M4 | Qdrant vector repository | Next |
 | M5 | Document parsing + chunking | Pending |
 | M6 | Entity/relationship extraction | Pending |
 | M7 | Complete ingestion pipeline | Pending |
