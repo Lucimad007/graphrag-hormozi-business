@@ -15,7 +15,7 @@ Alex Hormozi’s published works are a **target knowledge domain** for users who
 
 Keep local corpora out of git unless they are clearly free to redistribute. `.gitignore` already ignores generic `data/` directories.
 
-A tiny synthetic example lives in [samples/low-close-rate.md](samples/low-close-rate.md).
+A tiny synthetic example lives in [samples/low-close-rate.md](samples/low-close-rate.md). Retrieval eval cases are in [eval/dataset.json](eval/dataset.json).
 
 ## How ingestion is intended to work
 

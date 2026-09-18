@@ -15,8 +15,8 @@
 | M10 | Hybrid retrieval | Done |
 | M11 | LangGraph query/reasoning workflow | Done |
 | M12 | FastAPI API | Done |
-| M13 | Tests + evaluation dataset | Next |
-| M14 | Docker / local developer experience | Pending |
+| M13 | Tests + evaluation dataset | Done |
+| M14 | Docker / local developer experience | Next |
 | M15 | README + architecture documentation + cleanup | Pending |
 
 After each milestone: run relevant checks, one conventional commit, then wait before starting the next.

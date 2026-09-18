@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "description": "Deterministic retrieval eval over synthetic business notes. Not a copyrighted corpus.",
+  "cases": [
+    {
+      "id": "leads-low-close-rate",
+      "query": "What is probably causing a business with lots of leads but a low close rate?",
+      "expect_documents": ["low-close-rate.md"],
+      "expect_entity_ids": ["problem:low-close-rate", "metric:close-rate"],
+      "expect_relationship_types": ["MEASURED_BY"]
+    },
+    {
+      "id": "inspect-offer",
+      "query": "Should I buy more traffic or inspect the offer and sales process?",
+      "expect_documents": ["low-close-rate.md"],
+      "expect_entity_ids": ["metric:close-rate"],
+      "expect_relationship_types": ["IMPROVES"]
+    },
+    {
+      "id": "unclear-offer",
+      "query": "Why would an unclear offer stall closes?",
+      "expect_documents": ["offer-clarity.md"],
+      "expect_entity_ids": ["offer:unclear-offer", "problem:confusion-about-what-is-being-bought"],
+      "expect_relationship_types": ["SOLVES"]
+    }
+  ]
+}
