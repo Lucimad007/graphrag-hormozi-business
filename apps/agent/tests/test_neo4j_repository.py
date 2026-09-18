@@ -215,6 +215,26 @@ def test_invalid_hops_rejected() -> None:
         repo.related_subgraph(["x"], hops=99)
 
 
+def test_find_entities_parameterizes_query() -> None:
+    node = {
+        "id": "problem:low-close-rate",
+        "type": "Problem",
+        "name": "Low close rate",
+        "aliases": [],
+        "source_ids": [],
+        "properties_json": "{}",
+    }
+    session = FakeSession([FakeResult([{"e": node}])])
+    repo = Neo4jGraphRepository(FakeDriver(session))
+    hits = repo.find_entities("low close rate'; DELETE n //")
+    query, params = session.calls[0]
+    assert "CONTAINS toLower($needle)" in query
+    assert "DELETE" not in query
+    assert params is not None
+    assert params["needle"] == "low close rate'; DELETE n //"
+    assert hits[0].id == "problem:low-close-rate"
+
+
 def test_get_entity_maps_node() -> None:
     node = {
         "id": "problem:low-close-rate",

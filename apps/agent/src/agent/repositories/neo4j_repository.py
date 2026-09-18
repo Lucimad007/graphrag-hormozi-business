@@ -25,6 +25,15 @@ SET e.type = $type,
 RETURN e
 """
 
+_FIND_ENTITIES = """
+MATCH (e:Entity)
+WHERE toLower(e.name) CONTAINS toLower($needle)
+   OR any(alias IN coalesce(e.aliases, []) WHERE toLower(alias) CONTAINS toLower($needle))
+   OR any(term IN $terms WHERE toLower(e.name) CONTAINS term)
+RETURN e
+LIMIT $limit
+"""
+
 _GET_ENTITY = """
 MATCH (e:Entity {id: $id})
 RETURN e
@@ -110,6 +119,20 @@ class Neo4jGraphRepository:
             return None
         return entity_from_node(record["e"])
 
+    def find_entities(self, query: str, *, limit: int = 16) -> list[Entity]:
+        needle = query.strip()
+        if not needle:
+            return []
+        if limit < 1:
+            raise ValueError("limit must be a positive int")
+        terms = _search_terms(needle)
+        with self._driver.session() as session:
+            result = session.run(
+                _FIND_ENTITIES,
+                {"needle": needle, "terms": terms, "limit": limit},
+            )
+            return [entity_from_node(record["e"]) for record in result]
+
     def related_subgraph(self, seed_ids: Sequence[str], *, hops: int = 2) -> Subgraph:
         depth = _validated_hops(hops)
         query = (
@@ -190,6 +213,10 @@ def _cypher_rel_type(rel_type: str, registry: OntologyRegistry) -> str:
     if not _IDENT.fullmatch(rel_type):
         raise ValueError(f"Unsafe relationship type for Cypher: {rel_type!r}")
     return rel_type
+
+
+def _search_terms(query: str) -> list[str]:
+    return [token for token in re.findall(r"[a-z0-9]+", query.lower()) if len(token) >= 4]
 
 
 def _validated_hops(hops: int) -> int:

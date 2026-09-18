@@ -11,8 +11,8 @@
 | M6 | Entity/relationship extraction | Done |
 | M7 | Complete ingestion pipeline | Done |
 | M8 | Vector retrieval | Done |
-| M9 | Graph retrieval | Next |
-| M10 | Hybrid retrieval | Pending |
+| M9 | Graph retrieval | Done |
+| M10 | Hybrid retrieval | Next |
 | M11 | LangGraph query/reasoning workflow | Pending |
 | M12 | FastAPI API | Pending |
 | M13 | Tests + evaluation dataset | Pending |

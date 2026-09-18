@@ -1,3 +1,4 @@
+import re
 from collections.abc import Sequence
 from math import sqrt
 
@@ -26,10 +27,47 @@ class InMemoryGraphRepository:
     def get_entity(self, entity_id: str) -> Entity | None:
         return self.entities.get(entity_id)
 
+    def find_entities(self, query: str, *, limit: int = 16) -> list[Entity]:
+        needle = query.strip().lower()
+        if not needle:
+            return []
+        if limit < 1:
+            raise ValueError("limit must be a positive int")
+        terms = [token for token in re.findall(r"[a-z0-9]+", needle) if len(token) >= 4]
+        hits: list[Entity] = []
+        for entity in self.entities.values():
+            blob = " ".join([entity.name, *entity.aliases, entity.id]).lower()
+            if needle in blob or any(term in blob for term in terms):
+                hits.append(entity)
+            if len(hits) >= limit:
+                break
+        return hits
+
     def related_subgraph(self, seed_ids: Sequence[str], *, hops: int = 2) -> Subgraph:
+        if not isinstance(hops, int) or isinstance(hops, bool) or hops < 1 or hops > 5:
+            raise ValueError("hops must be an int between 1 and 5")
+        seen: set[str] = {entity_id for entity_id in seed_ids if entity_id in self.entities}
+        frontier = set(seen)
+        for _ in range(hops):
+            nxt: set[str] = set()
+            for rel in self.relationships.values():
+                if rel.source_id in frontier and rel.target_id in self.entities:
+                    nxt.add(rel.target_id)
+                if rel.target_id in frontier and rel.source_id in self.entities:
+                    nxt.add(rel.source_id)
+            nxt -= seen
+            if not nxt:
+                break
+            seen |= nxt
+            frontier = nxt
+        rels = [
+            rel
+            for rel in self.relationships.values()
+            if rel.source_id in seen and rel.target_id in seen
+        ]
         return Subgraph(
-            entities=[self.entities[i] for i in seed_ids if i in self.entities],
-            relationships=list(self.relationships.values()),
+            entities=[self.entities[entity_id] for entity_id in seen],
+            relationships=rels,
         )
 
     def close(self) -> None:

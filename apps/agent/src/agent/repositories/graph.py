@@ -24,6 +24,8 @@ class GraphRepository(Protocol):
 
     def get_entity(self, entity_id: str) -> Entity | None: ...
 
+    def find_entities(self, query: str, *, limit: int = 16) -> list[Entity]: ...
+
     def related_subgraph(
         self,
         seed_ids: Sequence[str],
