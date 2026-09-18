@@ -1,0 +1,12 @@
+[project]
+name = "ontology"
+version = "0.1.0"
+description = "Extensible business ontology schemas for GraphRAG."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

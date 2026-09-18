@@ -1,0 +1,38 @@
+[project]
+name = "graphrag-hormozi-business"
+version = "0.1.0"
+description = "Agentic GraphRAG for business strategy (replaceable knowledge sources)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "agent",
+    "ontology",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[tool.uv.workspace]
+members = ["apps/agent", "packages/ontology"]
+
+[tool.uv.sources]
+agent = { workspace = true }
+ontology = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["apps/agent/tests", "packages/ontology/tests"]
+pythonpath = ["apps/agent/src", "packages/ontology/src"]
+
+[tool.ruff]
+target-version = "py312"
+src = ["apps/agent/src", "packages/ontology/src"]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

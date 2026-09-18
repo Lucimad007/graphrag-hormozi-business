@@ -3,8 +3,8 @@
 | ID | Scope | Status |
 |----|--------|--------|
 | M0 | Repository inspection + architecture | Done |
-| M1 | Python project setup + configuration | Next |
-| M2 | Business ontology + domain models | Pending |
+| M1 | Python project setup + configuration | Done |
+| M2 | Business ontology + domain models | Next |
 | M3 | Neo4j graph repository | Pending |
 | M4 | Qdrant vector repository | Pending |
 | M5 | Document parsing + chunking | Pending |

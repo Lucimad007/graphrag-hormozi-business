@@ -1,0 +1,17 @@
+[project]
+name = "agent"
+version = "0.1.0"
+description = "GraphRAG agent service (ingestion, retrieval, LangGraph, FastAPI)."
+requires-python = ">=3.12"
+dependencies = [
+    "ontology",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+ontology = { workspace = true }
