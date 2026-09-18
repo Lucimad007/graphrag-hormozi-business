@@ -5,6 +5,7 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
+from agent.config.settings import Settings
 from agent.extraction.client import parse_json_object
 from agent.extraction.schemas import LlmCompletion
 from agent.graph.state import QueryState
@@ -42,6 +43,22 @@ class QueryWorkflow:
         self._hops = hops
         self._vector_limit = vector_limit
         self._min_score = min_score
+
+    @classmethod
+    def from_settings(cls, settings: Settings) -> QueryWorkflow:
+        from agent.embedding import OpenAICompatibleEmbeddings
+        from agent.extraction.client import OpenAICompatibleClient
+        from agent.repositories.neo4j_repository import Neo4jGraphRepository
+        from agent.repositories.qdrant_repository import QdrantVectorStore
+
+        embeddings = OpenAICompatibleEmbeddings.from_settings(settings)
+        vectors = QdrantVectorStore.from_settings(settings)
+        graph = Neo4jGraphRepository.from_settings(settings)
+        return cls(
+            llm=OpenAICompatibleClient.from_settings(settings),
+            vector=VectorRetriever(vectors, embeddings),
+            graph=GraphRetriever(graph),
+        )
 
     def compile(self) -> Any:
         graph = StateGraph(QueryState)

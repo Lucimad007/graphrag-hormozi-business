@@ -14,8 +14,8 @@
 | M9 | Graph retrieval | Done |
 | M10 | Hybrid retrieval | Done |
 | M11 | LangGraph query/reasoning workflow | Done |
-| M12 | FastAPI API | Next |
-| M13 | Tests + evaluation dataset | Pending |
+| M12 | FastAPI API | Done |
+| M13 | Tests + evaluation dataset | Next |
 | M14 | Docker / local developer experience | Pending |
 | M15 | README + architecture documentation + cleanup | Pending |
 
