@@ -1,5 +1,3 @@
-# Knowledge sources
-
 This directory is for **legally obtained** business documents that you choose to ingest, plus small **synthetic** samples used in tests and demos.
 
 ## What this repository does not contain
@@ -17,12 +15,14 @@ Alex Hormozi’s published works are a **target knowledge domain** for users who
 
 Keep local corpora out of git unless they are clearly free to redistribute. `.gitignore` already ignores generic `data/` directories.
 
+A tiny synthetic example lives in [samples/low-close-rate.md](samples/low-close-rate.md).
+
 ## How ingestion is intended to work
 
-The pipeline (implemented in later milestones) is domain-agnostic:
+The pipeline is domain-agnostic:
 
 1. Place Markdown, TXT, or PDF files in a path you control.
-2. Call the ingest API or CLI with that path.
+2. Call the ingest API or `IngestionService.ingest_path`.
 3. Documents are parsed, normalized, chunked, extracted against the **business ontology**, embedded, and stored in Qdrant and Neo4j.
 
 Extraction does not require Hormozi-specific vocabulary. Swap the corpus to change the knowledge source.
