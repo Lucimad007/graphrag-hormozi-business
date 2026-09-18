@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from math import sqrt
 
 from agent.repositories.graph import Subgraph
 from agent.repositories.vector import ChunkRecord, VectorFilter, VectorHit
@@ -54,4 +55,37 @@ class InMemoryVectorStore:
         limit: int = 8,
         filters: VectorFilter | None = None,
     ) -> list[VectorHit]:
-        return []
+        if limit < 1:
+            raise ValueError("limit must be a positive int")
+        hits: list[VectorHit] = []
+        for chunk in self.chunks.values():
+            if not _matches_filter(chunk, filters):
+                continue
+            hits.append(VectorHit(chunk=chunk, score=_cosine(query_vector, chunk.vector)))
+        hits.sort(key=lambda hit: hit.score, reverse=True)
+        return hits[:limit]
+
+
+def _matches_filter(chunk: ChunkRecord, filters: VectorFilter | None) -> bool:
+    if filters is None:
+        return True
+    if filters.source is not None and chunk.source != filters.source:
+        return False
+    if filters.document is not None and chunk.document != filters.document:
+        return False
+    if filters.section is not None and chunk.section != filters.section:
+        return False
+    if filters.entity_ids and not set(filters.entity_ids).intersection(chunk.entity_ids):
+        return False
+    return True
+
+
+def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
+    if len(left) != len(right) or not left:
+        return 0.0
+    dot = sum(a * b for a, b in zip(left, right, strict=True))
+    norm_l = sqrt(sum(a * a for a in left))
+    norm_r = sqrt(sum(b * b for b in right))
+    if norm_l == 0.0 or norm_r == 0.0:
+        return 0.0
+    return dot / (norm_l * norm_r)

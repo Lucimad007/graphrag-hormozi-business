@@ -10,8 +10,8 @@
 | M5 | Document parsing + chunking | Done |
 | M6 | Entity/relationship extraction | Done |
 | M7 | Complete ingestion pipeline | Done |
-| M8 | Vector retrieval | Next |
-| M9 | Graph retrieval | Pending |
+| M8 | Vector retrieval | Done |
+| M9 | Graph retrieval | Next |
 | M10 | Hybrid retrieval | Pending |
 | M11 | LangGraph query/reasoning workflow | Pending |
 | M12 | FastAPI API | Pending |
