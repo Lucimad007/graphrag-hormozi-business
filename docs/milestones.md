@@ -7,8 +7,8 @@
 | M2 | Business ontology + domain models | Done |
 | M3 | Neo4j graph repository | Done |
 | M4 | Qdrant vector repository | Done |
-| M5 | Document parsing + chunking | Next |
-| M6 | Entity/relationship extraction | Pending |
+| M5 | Document parsing + chunking | Done |
+| M6 | Entity/relationship extraction | Next |
 | M7 | Complete ingestion pipeline | Pending |
 | M8 | Vector retrieval | Pending |
 | M9 | Graph retrieval | Pending |
