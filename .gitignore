@@ -21,6 +21,7 @@ build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.cache/
 .coverage
 htmlcov/
 .tox/
@@ -41,5 +42,6 @@ htmlcov/
 Thumbs.db
 
 # Docker volumes / local data
+docker-compose.override.yml
 data/
 *.log

@@ -123,6 +123,8 @@ def test_prompt_lists_ontology_not_a_vendor() -> None:
 def test_parse_json_fences() -> None:
     parsed = parse_json_object('```json\n{"entities": []}\n```')
     assert parsed == {"entities": []}
+    mixed = parse_json_object('thinking {not json}\n{"entities": [{"type": "Metric"}]}')
+    assert mixed["entities"][0]["type"] == "Metric"
 
 
 def test_parse_json_invalid() -> None:
@@ -162,6 +164,30 @@ def test_openai_client_posts_chat_completions(monkeypatch: pytest.MonkeyPatch) -
     assert captured["url"] == "https://example.test/v1/chat/completions"
     assert captured["json"]["messages"][0]["content"] == "sys"
     assert captured["headers"]["Authorization"] == "Bearer sk-test"
+    assert captured["headers"]["User-Agent"] == "graphrag-agent/0.1"
+    assert captured["headers"]["x-opencode-session"]
+    assert captured["json"]["max_tokens"] == 8192
+    assert "response_format" not in captured["json"]
+
+
+def test_openai_client_reads_reasoning_content(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, Any]:
+            return {"choices": [{"message": {"content": "", "reasoning_content": '{"ok": true}'}}]}
+
+    monkeypatch.setattr(
+        "agent.extraction.client.httpx.post",
+        lambda *args, **kwargs: FakeResponse(),
+    )
+    client = OpenAICompatibleClient(
+        base_url="https://example.test/v1",
+        api_key="sk-test",
+        model="gpt-test",
+    )
+    assert client.complete(system="sys", user="usr") == '{"ok": true}'
 
 
 def test_from_settings_requires_key() -> None:

@@ -14,7 +14,7 @@ class FixedEmbeddings:
     def __init__(self, mapping: dict[str, list[float]]) -> None:
         self.mapping = mapping
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str], *, input_type: str | None = None) -> list[list[float]]:
         return [list(self.mapping[text]) for text in texts]
 
 

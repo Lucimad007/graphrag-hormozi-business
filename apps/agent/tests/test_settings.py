@@ -18,7 +18,9 @@ def test_settings_defaults_without_secrets(monkeypatch: pytest.MonkeyPatch) -> N
     assert settings.llm_api_key is None
     assert settings.qdrant_url == "http://localhost:6333"
     assert settings.neo4j_uri == "bolt://localhost:7687"
-    assert settings.llm_model == "gpt-4o-mini"
+    assert settings.llm_model == "deepseek-v4.1-flash"
+    assert settings.llm_base_url == "https://opencode.ai/zen/go/v1"
+    assert settings.embedding_provider == "bge_m3"
 
 
 def test_settings_reads_env(monkeypatch: pytest.MonkeyPatch) -> None:

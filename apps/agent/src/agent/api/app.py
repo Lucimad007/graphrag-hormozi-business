@@ -48,15 +48,20 @@ def create_app(
         if service is None:
             raise HTTPException(status_code=503, detail="Ingestion is not configured")
         path = Path(body.path).expanduser()
-        if not path.is_file():
+        if path.is_dir():
+            result = service.ingest_tree(path)
+        elif path.is_file():
+            result = service.ingest_path(path, document_id=body.document_id)
+        else:
             raise HTTPException(status_code=404, detail=f"Document not found: {path}")
-        result = service.ingest_path(path, document_id=body.document_id)
         return IngestResponse(
             document_id=result.document_id,
             chunk_count=result.chunk_count,
             entity_count=result.entity_count,
             relationship_count=result.relationship_count,
             skipped=result.skipped,
+            documents=result.documents,
+            skipped_files=result.skipped_files,
         )
 
     return application
@@ -65,8 +70,13 @@ def create_app(
 def create_app_from_settings() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
-    workflow = QueryWorkflow.from_settings(settings)
-    ingestion = IngestionService.from_settings(settings)
+    from agent.extraction.client import LlmError
+
+    try:
+        workflow = QueryWorkflow.from_settings(settings)
+        ingestion = IngestionService.from_settings(settings)
+    except LlmError:
+        return create_app()
     return create_app(compiled_query=workflow.compile(), ingestion=ingestion)
 
 

@@ -10,7 +10,7 @@ class LexicalEmbeddings:
             raise ValueError("dimensions must be >= 8")
         self.dimensions = dimensions
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str], *, input_type: str | None = None) -> list[list[float]]:
         return [self._vector(text) for text in texts]
 
     def _vector(self, text: str) -> list[float]:

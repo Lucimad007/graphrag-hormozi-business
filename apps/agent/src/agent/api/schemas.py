@@ -49,6 +49,8 @@ class ReasoningMetadata(BaseModel):
 
     intent: str | None = None
     restated_query: str | None = None
+    step_back_query: str | None = None
+    situation: str | None = None
     summary: str = ""
     evidence_paths: list[str] = Field(default_factory=list)
 
@@ -85,6 +87,8 @@ class IngestResponse(BaseModel):
     entity_count: int
     relationship_count: int
     skipped: list[str] = Field(default_factory=list)
+    documents: list[str] = Field(default_factory=list)
+    skipped_files: list[str] = Field(default_factory=list)
 
 
 def query_response_from_state(state: dict[str, Any]) -> QueryResponse:
@@ -121,6 +125,8 @@ def query_response_from_state(state: dict[str, Any]) -> QueryResponse:
         reasoning=ReasoningMetadata(
             intent=state.get("intent"),
             restated_query=state.get("restated_query"),
+            step_back_query=state.get("step_back_query") or state.get("restated_query"),
+            situation=state.get("situation"),
             summary=state.get("reasoning_summary") or "",
             evidence_paths=list(state.get("evidence_notes") or []),
         ),

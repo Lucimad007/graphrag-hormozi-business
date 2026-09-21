@@ -11,7 +11,7 @@ class FixedEmbeddings:
     def __init__(self, mapping: dict[str, list[float]]) -> None:
         self.mapping = mapping
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str], *, input_type: str | None = None) -> list[list[float]]:
         return [list(self.mapping[text]) for text in texts]
 
 
@@ -80,3 +80,21 @@ def test_vector_retriever_filters_entity_ids() -> None:
 def test_empty_query_returns_no_hits() -> None:
     retriever = VectorRetriever(_store(), FixedEmbeddings({}))
     assert retriever.retrieve("   ") == []
+
+
+def test_retrieve_union_merges_queries_and_keeps_best_score() -> None:
+    retriever = VectorRetriever(
+        _store(),
+        FixedEmbeddings(
+            {
+                "close rate declining": [1.0, 0.0],
+                "what is close rate": [0.2, 0.8],
+            }
+        ),
+    )
+    hits = retriever.retrieve_union(
+        ["close rate declining", "what is close rate", "close rate declining"],
+        limit=2,
+    )
+    assert [hit.chunk.id for hit in hits] == ["a:0", "b:0"]
+    assert hits[0].score > hits[1].score

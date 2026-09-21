@@ -13,7 +13,7 @@ Alex Hormozi’s published works are a **target knowledge domain** for users who
 - Documents you have a license or permission to process
 - Synthetic examples that illustrate ontology types (Problem, Metric, Offer, and so on) without copying protected text
 
-Keep local corpora out of git unless they are clearly free to redistribute. `.gitignore` already ignores generic `data/` directories.
+Keep local corpora out of git unless they are clearly free to redistribute. `.gitignore` already ignores generic `data/` directories. Ingest from a path you pass to the CLI or API; do not copy paid books into this repo.
 
 A tiny synthetic example lives in [samples/low-close-rate.md](samples/low-close-rate.md). Retrieval eval cases are in [eval/dataset.json](eval/dataset.json).
 

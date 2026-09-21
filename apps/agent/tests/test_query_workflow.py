@@ -17,7 +17,10 @@ class ScriptedLlm:
     def complete(self, *, system: str, user: str) -> str:
         self.calls.append(system)
         if "Restate" in system:
-            return '{"restated_query": "What causes a low close rate despite many leads?"}'
+            return (
+                '{"restated_query": "What causes a low close rate despite many leads?", '
+                '"step_back_query": "What causes a low close rate despite many leads?"}'
+            )
         if "Classify" in system:
             return f'{{"intent": "{self.intent}"}}'
         if "evidence paths" in system:
@@ -46,7 +49,7 @@ class RecordingVectorRetriever(VectorRetriever):
 class FixedEmbeddings:
     dimensions = 2
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str], *, input_type: str | None = None) -> list[list[float]]:
         return [[1.0, 0.0] for _ in texts]
 
 
@@ -109,6 +112,32 @@ def test_workflow_retrieves_then_answers_with_sources() -> None:
     assert "MEASURED_BY" in result["reasoning_summary"]
     assert result["graph"]["seed_ids"]
     assert any(hit["chunk"]["id"] == "close:0" for hit in result["vector_hits"])
+    assert result["step_back_query"] == result["restated_query"]
+
+
+def test_step_back_searches_principle_query_and_keeps_situation() -> None:
+    class StepBackLlm(ScriptedLlm):
+        def complete(self, *, system: str, user: str) -> str:
+            if "Restate" in system:
+                return (
+                    '{"restated_query": '
+                    '"Why did close rate drop from 40% to 20% despite high lead volume?", '
+                    '"step_back_query": '
+                    '"What causes close rate to decline when lead volume stays high?"}'
+                )
+            return super().complete(system=system, user=user)
+
+    llm = StepBackLlm()
+    vector = RecordingVectorRetriever(_vector_store(), FixedEmbeddings())
+    app = QueryWorkflow(llm=llm, vector=vector, graph=GraphRetriever(_graph())).compile()
+    result = app.invoke(
+        {"query": "Gym: close rate fell from 40% to 20% but Instagram leads are still high"}
+    )
+    assert vector.calls == 2
+    assert "40%" in result["restated_query"]
+    assert "close rate to decline" in result["step_back_query"]
+    answer_prompt = next(s for s in llm.calls if "Answer using only" in s)
+    assert "Apply those playbooks to THIS situation" in answer_prompt
 
 
 def test_out_of_scope_skips_retrieval() -> None:

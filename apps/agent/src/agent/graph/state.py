@@ -13,6 +13,8 @@ Intent = Literal[
 class QueryState(TypedDict, total=False):
     query: str
     restated_query: str
+    step_back_query: str
+    situation: str
     intent: str
     skip_retrieval: bool
     vector_hits: list[dict]

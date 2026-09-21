@@ -40,6 +40,8 @@ class VectorStore(Protocol):
 
     def upsert_chunks(self, chunks: Sequence[ChunkRecord]) -> None: ...
 
+    def list_chunks(self) -> list[ChunkRecord]: ...
+
     def search(
         self,
         query_vector: Sequence[float],

@@ -86,6 +86,9 @@ class InMemoryVectorStore:
         for chunk in chunks:
             self.chunks[chunk.id] = chunk
 
+    def list_chunks(self) -> list[ChunkRecord]:
+        return list(self.chunks.values())
+
     def search(
         self,
         query_vector: Sequence[float],

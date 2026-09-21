@@ -49,6 +49,25 @@ class QdrantVectorStore:
         points = [_to_point(chunk) for chunk in chunks]
         self._client.upsert(collection_name=self._collection, points=points)
 
+    def list_chunks(self) -> list[ChunkRecord]:
+        records: list[ChunkRecord] = []
+        offset: Any = None
+        while True:
+            points, offset = self._client.scroll(
+                collection_name=self._collection,
+                limit=256,
+                offset=offset,
+                with_payload=True,
+                with_vectors=True,
+            )
+            for point in points:
+                payload = point.payload or {}
+                vector = _payload_vector(point, payload)
+                records.append(chunk_from_payload(payload, vector=vector))
+            if offset is None:
+                break
+        return records
+
     def search(
         self,
         query_vector: Sequence[float],

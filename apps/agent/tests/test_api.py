@@ -53,14 +53,14 @@ class ExtractLlm:
 class QueryEmbeddings:
     dimensions = 2
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str], *, input_type: str | None = None) -> list[list[float]]:
         return [[1.0, 0.0] for _ in texts]
 
 
 class IngestEmbeddings:
     dimensions = 4
 
-    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+    def embed(self, texts: Sequence[str], *, input_type: str | None = None) -> list[list[float]]:
         return [[0.25, 0.25, 0.25, 0.25] for _ in texts]
 
 
@@ -162,3 +162,12 @@ def test_ingest_and_missing_file(tmp_path: Path) -> None:
     assert payload["chunk_count"] >= 1
     assert payload["entity_count"] == 2
     assert "problem:low-close-rate" in graph.entities
+    nested = tmp_path / "corpus"
+    nested.mkdir()
+    (nested / "a.md").write_text("# Problem\n\nLow close rate.\n", encoding="utf-8")
+    (nested / "clip.wav").write_bytes(b"xxxx")
+    tree = client.post("/ingest", json={"path": str(nested)})
+    assert tree.status_code == 200
+    body = tree.json()
+    assert body["chunk_count"] >= 1
+    assert any(name.endswith("clip.wav") for name in body["skipped_files"])

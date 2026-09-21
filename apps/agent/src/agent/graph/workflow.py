@@ -9,6 +9,11 @@ from agent.config.settings import Settings
 from agent.extraction.client import parse_json_object
 from agent.extraction.schemas import LlmCompletion
 from agent.graph.state import QueryState
+from agent.graph.step_back import (
+    GENERATE_ANSWER_SYSTEM,
+    STEP_BACK_SYSTEM,
+    unique_retrieval_queries,
+)
 from agent.repositories.graph import Subgraph
 from agent.repositories.vector import VectorHit
 from agent.retrieval.graph import GraphRetrieval, GraphRetriever
@@ -46,12 +51,12 @@ class QueryWorkflow:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> QueryWorkflow:
-        from agent.embedding import OpenAICompatibleEmbeddings
+        from agent.embedding import embeddings_from_settings
         from agent.extraction.client import OpenAICompatibleClient
         from agent.repositories.neo4j_repository import Neo4jGraphRepository
         from agent.repositories.qdrant_repository import QdrantVectorStore
 
-        embeddings = OpenAICompatibleEmbeddings.from_settings(settings)
+        embeddings = embeddings_from_settings(settings)
         vectors = QdrantVectorStore.from_settings(settings)
         graph = Neo4jGraphRepository.from_settings(settings)
         return cls(
@@ -88,16 +93,20 @@ class QueryWorkflow:
 
     def understand_query(self, state: QueryState) -> QueryState:
         query = state["query"]
-        raw = self._llm.complete(
-            system=(
-                "Restate the user's business question in one clear sentence. "
-                'Return JSON {"restated_query": "..."} only.'
-            ),
-            user=query,
-        )
+        raw = self._llm.complete(system=STEP_BACK_SYSTEM, user=query)
         payload = _safe_json(raw)
-        restated = str(payload.get("restated_query") or query).strip() or query
-        return {"restated_query": restated}
+        restated = _clean_query(payload.get("restated_query"), query)
+        step_back = _clean_query(payload.get("step_back_query"), restated)
+        situation = str(payload.get("situation") or "").strip()
+        if situation.casefold() in {"none", "null"}:
+            situation = restated
+        elif not situation:
+            situation = restated
+        return {
+            "restated_query": restated,
+            "step_back_query": step_back,
+            "situation": situation,
+        }
 
     def classify_intent(self, state: QueryState) -> QueryState:
         raw = self._llm.complete(
@@ -121,13 +130,16 @@ class QueryWorkflow:
         return "retrieve_graph_context"
 
     def retrieve_graph_context(self, state: QueryState) -> QueryState:
-        query = state.get("restated_query") or state["query"]
-        retrieval = self._graph.retrieve(query, hops=self._hops)
-        return {"graph": retrieval.model_dump()}
+        merged = GraphRetrieval()
+        for query in _situation_and_step_back(state):
+            merged = _merge_graph(merged, self._graph.retrieve(query, hops=self._hops))
+        return {"graph": merged.model_dump()}
 
     def retrieve_vector_context(self, state: QueryState) -> QueryState:
-        query = state.get("restated_query") or state["query"]
-        hits = self._vector.retrieve(query, limit=self._vector_limit)
+        hits = self._vector.retrieve_union(
+            _situation_and_step_back(state),
+            limit=self._vector_limit,
+        )
         return {"vector_hits": [hit.model_dump() for hit in hits]}
 
     def evaluate_evidence(self, state: QueryState) -> QueryState:
@@ -167,13 +179,16 @@ class QueryWorkflow:
     def reason(self, state: QueryState) -> QueryState:
         raw = self._llm.complete(
             system=(
-                "Summarize retrieved evidence as short evidence paths. "
+                "Summarize retrieved evidence as short evidence paths that apply to the "
+                "original situation (keep the user's numbers and channel). "
                 "Do not invent sources. Do not include hidden chain-of-thought. "
                 'Return JSON {"reasoning_summary": "..."} only.'
             ),
             user=json.dumps(
                 {
-                    "query": state.get("restated_query") or state["query"],
+                    "original_query": state["query"],
+                    "restated_query": state.get("restated_query") or state["query"],
+                    "situation": state.get("situation") or state.get("restated_query"),
                     "intent": state.get("intent"),
                     "evidence_notes": state.get("evidence_notes") or [],
                 }
@@ -200,14 +215,13 @@ class QueryWorkflow:
             dict.fromkeys(hit.chunk.document for hit in hits if hit.chunk.document)
         )
         raw = self._llm.complete(
-            system=(
-                "Answer using only the evidence. Cite document names. "
-                "If evidence is insufficient, say so. "
-                'Return JSON {"answer": "..."} only.'
-            ),
+            system=GENERATE_ANSWER_SYSTEM,
             user=json.dumps(
                 {
-                    "query": state.get("restated_query") or state["query"],
+                    "original_query": state["query"],
+                    "restated_query": state.get("restated_query") or state["query"],
+                    "situation": state.get("situation") or state.get("restated_query"),
+                    "step_back_query": state.get("step_back_query"),
                     "reasoning_summary": state.get("reasoning_summary"),
                     "evidence_notes": state.get("evidence_notes") or [],
                     "chunks": [
@@ -226,6 +240,18 @@ class QueryWorkflow:
         if not answer:
             answer = "I could not produce a grounded answer from the retrieved evidence."
         return {"answer": answer, "source_documents": documents}
+
+
+def _situation_and_step_back(state: QueryState) -> list[str]:
+    restated = state.get("restated_query") or state["query"]
+    return unique_retrieval_queries(restated, state.get("step_back_query"))
+
+
+def _clean_query(value: object, fallback: str) -> str:
+    text = str(value or "").strip()
+    if not text or text.casefold() in {"none", "null"}:
+        return fallback
+    return text
 
 
 def _safe_json(text: str) -> dict[str, Any]:

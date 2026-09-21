@@ -8,7 +8,7 @@ Python 3.12+, [uv](https://docs.astral.sh/uv/), and Docker Compose.
 cp .env.example .env
 ```
 
-Set `NEO4J_PASSWORD` (the compose file defaults to `changeme` if unset). Set `LLM_API_KEY` for ingest and query. Leave it empty only if you are running unit tests, which mock the model.
+Set `NEO4J_PASSWORD` (the compose file defaults to `changeme` if unset). Set `LLM_API_KEY` to your OpenCode Go key. Chat defaults to DeepSeek V4.1 Flash. Embeddings default to local **BGE-M3** (`EMBEDDING_PROVIDER=bge_m3`). Leave the LLM key empty only for unit tests.
 
 ## 2. Start Qdrant, Neo4j, and the API
 
@@ -43,6 +43,14 @@ curl -s -X POST http://localhost:8000/ingest \
 ```
 
 If the API runs on the host instead of Compose, use the repo path to that file.
+
+To ingest extra files that stay **outside** the repo, pass their path at runtime (do not copy paid material into git):
+
+```bash
+uv run python -m agent.ingest_cli /path/to/documents
+```
+
+Video/audio/spreadsheets are skipped. Extraction calls an LLM **per chunk**. You must be legally entitled to process those files.
 
 ## 4. Query
 

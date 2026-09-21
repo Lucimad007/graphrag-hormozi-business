@@ -102,6 +102,56 @@ def test_parse_pdf_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "close rate" in parsed.sections[1].text
 
 
+def test_parse_pdf_falls_back_to_pymupdf_then_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
+    empty = SimpleNamespace(extract_text=lambda: "")
+    monkeypatch.setattr(
+        "agent.ingestion.parse.PdfReader",
+        lambda *_args, **_kw: SimpleNamespace(pages=[empty]),
+    )
+    monkeypatch.setattr("agent.ingestion.parse._pdf_pymupdf_sections", lambda _raw: [])
+    monkeypatch.setattr(
+        "agent.ingestion.parse._pdf_ocr_sections",
+        lambda _raw: [ParsedSection(title="page 1", text="Closer handbook from scan.")],
+    )
+    parsed = parse_bytes(b"%PDF-fake", source="scan.pdf", suffix=".pdf", document_id="scan")
+    assert parsed.sections[0].text.startswith("Closer handbook")
+    assert parsed.metadata["ocr"] is True
+
+
+def test_parse_docx_and_epub() -> None:
+    from io import BytesIO
+    from zipfile import ZipFile
+
+    from docx import Document
+
+    doc = Document()
+    doc.add_paragraph("An unclear offer stalls closes.")
+    buffer = BytesIO()
+    doc.save(buffer)
+    parsed = parse_bytes(
+        buffer.getvalue(),
+        source="notes.docx",
+        suffix=".docx",
+        document_id="notes",
+    )
+    assert "unclear offer" in parsed.sections[0].text.lower()
+
+    epub = BytesIO()
+    with ZipFile(epub, "w") as archive:
+        archive.writestr("mimetype", "application/epub+zip")
+        archive.writestr(
+            "OPS/ch.xhtml",
+            "<html><body><p>Close rate is the conversion metric.</p></body></html>",
+        )
+    parsed_epub = parse_bytes(
+        epub.getvalue(),
+        source="book.epub",
+        suffix=".epub",
+        document_id="book",
+    )
+    assert "conversion metric" in parsed_epub.sections[0].text.lower()
+
+
 def test_invalid_chunk_config() -> None:
     doc = ParsedDocument(
         document_id="d",

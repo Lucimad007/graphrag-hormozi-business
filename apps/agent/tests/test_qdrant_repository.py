@@ -71,6 +71,25 @@ def test_upsert_empty_is_noop() -> None:
     client.upsert.assert_not_called()
 
 
+def test_list_chunks_scrolls_all_points() -> None:
+    client = MagicMock()
+    payload = {
+        "chunk_id": "doc-1:0",
+        "text": "hello",
+        "source": "synthetic",
+        "document": "playbook.md",
+        "section": None,
+        "entity_ids": [],
+        "metadata": {},
+    }
+    point = SimpleNamespace(payload=payload, vector=[0.1, 0.2, 0.3])
+    client.scroll.side_effect = [([point], None)]
+    store = QdrantVectorStore(client, "business_chunks")
+    records = store.list_chunks()
+    assert [item.id for item in records] == ["doc-1:0"]
+    client.scroll.assert_called_once()
+
+
 def test_search_maps_hits_and_filters() -> None:
     client = MagicMock()
     payload = {
