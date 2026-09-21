@@ -195,7 +195,9 @@ class IngestionService:
         updated: list[ChunkRecord] = []
         for chunk in text_chunks:
             record = by_id[chunk.id]
-            entity_ids = [item.entity.id for item in extraction.entities if chunk.id in item.chunk_ids]
+            entity_ids = [
+                item.entity.id for item in extraction.entities if chunk.id in item.chunk_ids
+            ]
             updated.append(record.model_copy(update={"entity_ids": entity_ids}))
         self._vectors.upsert_chunks(updated)
         totals.entity_count = len(extraction.entities)

@@ -22,8 +22,8 @@ situation (one short line of facts, not a question):
 - Empty string if the question is already a pure definition/how-to with no case facts.
 
 Examples:
-"input": "Gym, lots of Instagram leads, close rate fell from 40% to 20% on a $3k coaching offer. What is going on?"
-"output_restated": "Why did close rate drop from 40% to 20% on a $3k coaching offer despite high Instagram lead volume?"
+"input": "Gym, lots of Instagram leads, close rate fell from 40% to 20% on a $3k coaching offer."
+"output_restated": "Why did close rate drop 40% to 20% on a $3k offer with high Instagram volume?"
 "output_step_back": "What causes close rate to decline when lead volume stays high?"
 "output_situation": "Gym coaching at $3k; Instagram lead volume high; close rate fell 40% to 20%."
 
@@ -41,7 +41,8 @@ Examples:
 
 GENERATE_ANSWER_SYSTEM = """\
 Answer using only the evidence for the original situation. Cite document names.
-The PDFs are playbooks. They will almost never name the user's gym, Instagram, or exact percents. That is expected.
+The PDFs are playbooks. They will almost never name the user's gym, Instagram, or exact percents.
+That is expected.
 Apply those playbooks to THIS situation (industry, channel, offer, numbers, trends in "situation").
 Do not say evidence is insufficient merely because those specifics are missing from the sources.
 Do not answer only the generic step-back question.

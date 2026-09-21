@@ -142,8 +142,8 @@ def _ocr_engine():
 
 def _pdf_ocr_sections(raw: bytes) -> list[ParsedSection]:
     try:
-        import pymupdf
         import numpy as np
+        import pymupdf
     except ImportError:
         return []
     try:
