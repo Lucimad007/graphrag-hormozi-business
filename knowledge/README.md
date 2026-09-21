@@ -4,7 +4,7 @@ This directory is for **legally obtained** business documents that you choose to
 
 Copyrighted books, playbooks, transcripts, or paid course materials are **not** included and must **not** be committed.
 
-Alex Hormozi’s published works are a **target knowledge domain** for users who already have a lawful copy. They are not a redistributable dataset.
+This project is **not affiliated with** Alex Hormozi or Acquisition.com. His published works are a **target knowledge domain** for users who already have a lawful copy. They are not a redistributable dataset.
 
 ## What you may add locally
 

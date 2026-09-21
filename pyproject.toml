@@ -1,7 +1,7 @@
 [project]
 name = "graphrag-hormozi-business"
 version = "0.1.0"
-description = "Agentic GraphRAG for business strategy (replaceable knowledge sources)."
+description = "Agentic GraphRAG: ontology extract, Qdrant + Neo4j, LangGraph step-back retrieval."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

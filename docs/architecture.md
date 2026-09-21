@@ -50,7 +50,7 @@ flowchart LR
 
 Ingest: document → parse → normalize → chunk → extract → embed → Qdrant + Neo4j.
 
-Query: `POST /query` → LangGraph (`understand_query` → `classify_intent` → graph retrieve → vector retrieve → `evaluate_evidence` → `reason` → `generate_answer`). `out_of_scope` skips retrieval. Evidence evaluation merges chunk entity ids into the subgraph.
+Query: `POST /query` → LangGraph (`understand_query` restates + step-back + situation → `classify_intent` → graph retrieve ∪ vector `retrieve_union` on both queries → `evaluate_evidence` → `reason` → `generate_answer` with the original situation). `out_of_scope` skips retrieval. Evidence evaluation merges chunk entity ids into the subgraph.
 
 ## Modules (`apps/agent/src/agent`)
 
@@ -60,7 +60,7 @@ Query: `POST /query` → LangGraph (`understand_query` → `classify_intent` →
 | `domain/` | Agent wrappers around ontology entities/rels. |
 | `ingestion/` | MD/TXT/PDF parse, chunk, `IngestionService`. |
 | `extraction/` | Ontology-constrained LLM extraction. |
-| `embedding.py` | OpenAI-compatible embeddings client. |
+| `embedding.py` | BGE-M3 local, Voyage, or OpenAI-compatible embeddings. |
 | `repositories/` | `VectorStore` / `GraphRepository`; Qdrant, Neo4j, in-memory fakes. |
 | `retrieval/` | Vector, graph, hybrid. |
 | `graph/` | LangGraph `QueryWorkflow` + `QueryState`. |
